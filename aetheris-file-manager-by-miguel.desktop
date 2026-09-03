@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Aetheris File Manager by Miguel
+Comment=Lightweight and universal file manager
+Exec=aetheris-file-manager-by-miguel
+Icon=system-file-manager
+Terminal=false
+Type=Application
+Categories=System;FileTools;FileManager;Utility;
+Keywords=files;folders;explorer;
