@@ -1,19 +1,14 @@
 import sys
 import os
-
-# 1. FORÇAR INDEPENDÊNCIA GRÁFICA TOTAL:
-# Desativa temas externos do sistema (Kvantum, qt5ct, qt6ct, gtk2/3 engines)
 os.environ["QT_QPA_PLATFORMTHEME"] = ""
 os.environ["QT_STYLE_OVERRIDE"] = ""
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QPalette, QColor
 from PyQt6.QtCore import Qt
 from aetheris_fm.ui import MainWindow
 
 def create_standalone_palette():
-    """Garante cores idênticas em qualquer distro e ambiente gráfico."""
     palette = QPalette()
     palette.setColor(QPalette.ColorRole.Window, QColor("#1e1e24"))
     palette.setColor(QPalette.ColorRole.WindowText, QColor("#e0e0e0"))
@@ -32,11 +27,8 @@ def create_standalone_palette():
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Aetheris File Manager by Miguel")
-    
-    # Força renderizador neutro embutido Fusion e a paleta própria
     app.setStyle("Fusion")
     app.setPalette(create_standalone_palette())
-    
     window = MainWindow()
     window.show()
     sys.exit(app.exec())

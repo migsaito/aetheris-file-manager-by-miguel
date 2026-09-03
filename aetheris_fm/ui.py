@@ -1,30 +1,45 @@
 import os
 import sys
-import subprocess
+import time
 import shutil
+import subprocess
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QComboBox, QFrame, QLabel,
-    QTreeView, QHeaderView, QMessageBox, QMenu
+    QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox,
+    QMenu, QAbstractItemView
 )
-from PyQt6.QtCore import QDir, Qt, QSettings
-from PyQt6.QtGui import QFileSystemModel, QAction, QIcon
+from PyQt6.QtCore import Qt, QSettings, QByteArray
+from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QColor
+from PyQt6.QtSvg import QSvgRenderer
 from aetheris_fm.locales import TRANSLATIONS
+
+SVG_FOLDER = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f5c211"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>"""
+SVG_FILE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#a0a0b8"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>"""
+
+def render_svg_icon(svg_str, size=20):
+    renderer = QSvgRenderer(QByteArray(svg_str.encode('utf-8')))
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    renderer.render(painter)
+    painter.end()
+    return QIcon(pixmap)
 
 STANDALONE_STYLE = """
 QMainWindow {
-    background-color: #1e1e24;
+    background-color: #1a1a22;
 }
 
 QWidget {
-    color: #e0e0e0;
-    font-family: 'Inter', 'Segoe UI', 'Cantarell', 'Ubuntu', sans-serif;
+    color: #e4e4ee;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
     font-size: 13px;
 }
 
 QLineEdit {
-    background-color: #2b2b36;
-    border: 1px solid #3d3d4d;
+    background-color: #242430;
+    border: 1px solid #363648;
     border-radius: 6px;
     padding: 6px 12px;
     color: #ffffff;
@@ -36,8 +51,8 @@ QLineEdit:focus {
 }
 
 QPushButton {
-    background-color: #2b2b36;
-    border: 1px solid #3d3d4d;
+    background-color: #242430;
+    border: 1px solid #363648;
     border-radius: 6px;
     padding: 6px 12px;
     color: #f0f0f0;
@@ -45,17 +60,17 @@ QPushButton {
 }
 
 QPushButton:hover {
-    background-color: #383847;
-    border-color: #525266;
+    background-color: #303040;
+    border-color: #4b4b60;
 }
 
 QPushButton:pressed {
-    background-color: #22222b;
+    background-color: #1b1b24;
 }
 
 QComboBox {
-    background-color: #2b2b36;
-    border: 1px solid #3d3d4d;
+    background-color: #242430;
+    border: 1px solid #363648;
     border-radius: 6px;
     padding: 4px 10px;
     color: #f0f0f0;
@@ -68,51 +83,50 @@ QComboBox::drop-down {
 }
 
 QComboBox QAbstractItemView {
-    background-color: #2b2b36;
-    border: 1px solid #3d3d4d;
+    background-color: #242430;
+    border: 1px solid #363648;
     selection-background-color: #4a5bcf;
     selection-color: #ffffff;
     color: #ffffff;
     outline: none;
 }
 
-QTreeView {
-    background-color: #18181c;
-    border: 1px solid #2b2b36;
+QTableWidget {
+    background-color: #14141a;
+    border: 1px solid #242430;
     border-radius: 8px;
-    alternate-background-color: #1f1f26;
-    show-decoration-selected: 1;
+    gridline-color: transparent;
     outline: none;
 }
 
-QTreeView::item {
-    height: 28px;
-    border-radius: 4px;
-    padding-left: 4px;
+QTableWidget::item {
+    height: 30px;
+    padding-left: 6px;
+    border: none;
 }
 
-QTreeView::item:hover {
-    background-color: #2b2b38;
+QTableWidget::item:hover {
+    background-color: #22222f;
 }
 
-QTreeView::item:selected {
-    background-color: #3b4998;
+QTableWidget::item:selected {
+    background-color: #35428a;
     color: #ffffff;
 }
 
 QHeaderView::section {
-    background-color: #22222b;
-    color: #a0a0b0;
-    padding: 6px 8px;
+    background-color: #1f1f2a;
+    color: #9898aa;
+    padding: 8px 10px;
     border: none;
-    border-right: 1px solid #2e2e3a;
-    border-bottom: 1px solid #2e2e3a;
+    border-bottom: 2px solid #2a2a3a;
+    border-right: 1px solid #242430;
     font-weight: 600;
 }
 
 QMenu {
-    background-color: #262633;
-    border: 1px solid #3d3d4d;
+    background-color: #22222e;
+    border: 1px solid #363648;
     border-radius: 6px;
     padding: 4px;
 }
@@ -129,23 +143,23 @@ QMenu::item:selected {
 
 QScrollBar:vertical {
     border: none;
-    background: #18181c;
+    background: #14141a;
     width: 10px;
-    margin: 0px;
+    margin: 0;
 }
 
 QScrollBar::handle:vertical {
-    background: #383847;
+    background: #2e2e3e;
     min-height: 20px;
     border-radius: 5px;
 }
 
 QScrollBar::handle:vertical:hover {
-    background: #4e4e63;
+    background: #424258;
 }
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0px;
+    height: 0;
 }
 """
 
@@ -153,52 +167,45 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.settings = QSettings("Aetheris", "FileManagerByMiguel")
-        
-        # INICIALIZAÇÃO FIXA EM EN_US:
-        # Por padrão a aplicação inicia sempre em inglês dos EUA
         self.current_lang = "en_US"
-        
+        self.current_path = os.path.expanduser("~")
         self.history = []
         self.history_index = -1
-        
+        self.icon_folder = render_svg_icon(SVG_FOLDER)
+        self.icon_file = render_svg_icon(SVG_FILE)
         self.setStyleSheet(STANDALONE_STYLE)
         self.init_ui()
         self.apply_translations()
+        self.go_to(self.current_path)
 
     def t(self, key):
         return TRANSLATIONS.get(self.current_lang, {}).get(key, key)
 
     def init_ui(self):
         self.resize(1050, 680)
-        self.setMinimumSize(700, 400)
-        
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        self.main_layout = QVBoxLayout(central_widget)
+        self.setMinimumSize(700, 420)
+        central = QWidget()
+        self.setCentralWidget(central)
+        self.main_layout = QVBoxLayout(central)
         self.main_layout.setContentsMargins(10, 10, 10, 10)
         self.main_layout.setSpacing(8)
-
-        # Banner de Root removível
         is_root = (os.geteuid() == 0)
         show_root_banner = self.settings.value("show_root_banner", "true") == "true"
         
         if is_root and show_root_banner:
             self.root_frame = QFrame()
             self.root_frame.setStyleSheet(
-                "background-color: #701a1a; color: #ffdede; border: 1px solid #992626; border-radius: 6px; padding: 6px;"
+                "background-color: #721818; color: #ffe6e6; border: 1px solid #942525; border-radius: 6px; padding: 6px;"
             )
             root_layout = QHBoxLayout(self.root_frame)
             root_layout.setContentsMargins(10, 4, 10, 4)
-            
             self.root_label = QLabel()
             self.root_label.setStyleSheet("font-weight: bold; background: transparent; border: none;")
-            
             self.btn_dismiss_root = QPushButton()
             self.btn_dismiss_root.setStyleSheet(
-                "background: #4a1212; color: #ffffff; border: 1px solid #701a1a; padding: 4px 10px; border-radius: 4px;"
+                "background: #471111; color: #ffffff; border: 1px solid #721818; padding: 4px 10px; border-radius: 4px;"
             )
             self.btn_dismiss_root.clicked.connect(self.dismiss_root_warning)
-            
             root_layout.addWidget(self.root_label)
             root_layout.addStretch()
             root_layout.addWidget(self.btn_dismiss_root)
@@ -206,37 +213,27 @@ class MainWindow(QMainWindow):
         else:
             self.root_frame = None
 
-        # Barra de Navegação
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(6)
-        
         self.btn_back = QPushButton("◀")
-        self.btn_back.setFixedWidth(40)
+        self.btn_back.setFixedWidth(38)
         self.btn_back.clicked.connect(self.nav_back)
-
         self.btn_forward = QPushButton("▶")
-        self.btn_forward.setFixedWidth(40)
+        self.btn_forward.setFixedWidth(38)
         self.btn_forward.clicked.connect(self.nav_forward)
-
         self.btn_home = QPushButton()
         self.btn_home.clicked.connect(self.nav_home)
-
         self.btn_refresh = QPushButton()
         self.btn_refresh.clicked.connect(self.nav_refresh)
-
         self.path_input = QLineEdit()
         self.path_input.returnPressed.connect(self.navigate_to_path)
-
-        # Seletor de Idioma (Inicia selecionado em English US)
         self.lang_combo = QComboBox()
         for code, data in TRANSLATIONS.items():
             self.lang_combo.addItem(data["lang_name"], code)
-        
-        index = self.lang_combo.findData("en_US")
-        if index != -1:
-            self.lang_combo.setCurrentIndex(index)
+        idx = self.lang_combo.findData("en_US")
+        if idx != -1:
+            self.lang_combo.setCurrentIndex(idx)
         self.lang_combo.currentIndexChanged.connect(self.change_language)
-
         nav_layout.addWidget(self.btn_back)
         nav_layout.addWidget(self.btn_forward)
         nav_layout.addWidget(self.btn_home)
@@ -245,25 +242,20 @@ class MainWindow(QMainWindow):
         nav_layout.addWidget(self.lang_combo)
         self.main_layout.addLayout(nav_layout)
 
-        # Visualizador de Arquivos
-        self.model = QFileSystemModel()
-        self.model.setRootPath(QDir.rootPath())
-        self.model.setFilter(QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.Hidden)
-
-        self.tree = QTreeView()
-        self.tree.setModel(self.model)
-        self.tree.setAnimated(True)
-        self.tree.setSortingEnabled(True)
-        self.tree.setAlternatingRowColors(True)
-        self.tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.tree.doubleClicked.connect(self.on_item_double_clicked)
-        self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.tree.customContextMenuRequested.connect(self.open_context_menu)
-
-        self.main_layout.addWidget(self.tree)
-
-        initial_path = QDir.homePath()
-        self.go_to(initial_path)
+        self.table = QTableWidget()
+        self.table.setColumnCount(4)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.setShowGrid(False)
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.cellDoubleClicked.connect(self.on_row_double_clicked)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.open_context_menu)
+        self.main_layout.addWidget(self.table)
 
     def dismiss_root_warning(self):
         if self.root_frame:
@@ -274,7 +266,9 @@ class MainWindow(QMainWindow):
         new_lang = self.lang_combo.currentData()
         if new_lang:
             self.current_lang = new_lang
+            self.settings.setValue("language", new_lang)
             self.apply_translations()
+            self.load_directory(self.current_path)
 
     def apply_translations(self):
         self.setWindowTitle(self.t("title"))
@@ -283,6 +277,65 @@ class MainWindow(QMainWindow):
             self.btn_dismiss_root.setText(self.t("dismiss"))
         self.btn_home.setText(self.t("home"))
         self.btn_refresh.setText(self.t("refresh"))
+        self.table.setHorizontalHeaderLabels([
+            self.t("col_name"),
+            self.t("col_size"),
+            self.t("col_type"),
+            self.t("col_date")
+        ])
+
+    def format_size(self, size_bytes):
+        if size_bytes < 1024:
+            return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} KiB"
+        elif size_bytes < 1024 * 1024 * 1024:
+            return f"{size_bytes / (1024 * 1024):.1f} MiB"
+        else:
+            return f"{size_bytes / (1024 * 1024 * 1024):.1f} GiB"
+
+    def load_directory(self, path):
+        if not os.path.isdir(path):
+            return
+        self.current_path = os.path.abspath(path)
+        self.path_input.setText(self.current_path)
+        self.table.setRowCount(0)
+        try:
+            entries = os.scandir(self.current_path)
+        except PermissionError:
+            QMessageBox.critical(self, "Error", f"Permission denied:\n{self.current_path}")
+            return
+        dirs, files = [], []
+        for entry in entries:
+            try:
+                stat = entry.stat(follow_symlinks=False)
+                info = (entry.name, entry.is_dir(follow_symlinks=False), stat.st_size, stat.st_mtime)
+                if info[1]:
+                    dirs.append(info)
+                else:
+                    files.append(info)
+            except Exception:
+                continue
+        dirs.sort(key=lambda x: x[0].lower())
+        files.sort(key=lambda x: x[0].lower())
+        all_items = dirs + files
+        self.table.setRowCount(len(all_items))
+        for row, (name, is_dir, size, mtime) in enumerate(all_items):
+            item_name = QTableWidgetItem(name)
+            item_name.setIcon(self.icon_folder if is_dir else self.icon_file)
+            item_name.setData(Qt.ItemDataRole.UserRole, os.path.join(self.current_path, name))
+            item_name.setData(Qt.ItemDataRole.UserRole + 1, is_dir)
+            size_str = "" if is_dir else self.format_size(size)
+            item_size = QTableWidgetItem(size_str)
+            item_size.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            type_str = self.t("type_folder") if is_dir else self.t("type_file")
+            item_type = QTableWidgetItem(type_str)
+            date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
+            item_date = QTableWidgetItem(date_str)
+            self.table.setItem(row, 0, item_name)
+            self.table.setItem(row, 1, item_size)
+            self.table.setItem(row, 2, item_type)
+            self.table.setItem(row, 3, item_date)
 
     def go_to(self, path, track_history=True):
         if not os.path.exists(path):
@@ -292,10 +345,7 @@ class MainWindow(QMainWindow):
                 self.history = self.history[:self.history_index + 1]
             self.history.append(path)
             self.history_index = len(self.history) - 1
-        
-        index = self.model.index(path)
-        self.tree.setRootIndex(index)
-        self.path_input.setText(path)
+        self.load_directory(path)
 
     def nav_back(self):
         if self.history_index > 0:
@@ -308,20 +358,23 @@ class MainWindow(QMainWindow):
             self.go_to(self.history[self.history_index], track_history=False)
 
     def nav_home(self):
-        self.go_to(QDir.homePath())
+        self.go_to(os.path.expanduser("~"))
 
     def nav_refresh(self):
-        current_path = self.path_input.text()
-        self.go_to(current_path, track_history=False)
+        self.load_directory(self.current_path)
 
     def navigate_to_path(self):
         target = self.path_input.text()
         if os.path.isdir(target):
             self.go_to(target)
 
-    def on_item_double_clicked(self, index):
-        path = self.model.filePath(index)
-        if self.model.isDir(index):
+    def on_row_double_clicked(self, row, col):
+        item = self.table.item(row, 0)
+        if not item:
+            return
+        path = item.data(Qt.ItemDataRole.UserRole)
+        is_dir = item.data(Qt.ItemDataRole.UserRole + 1)
+        if is_dir:
             self.go_to(path)
         else:
             self.open_file_autonomously(path)
@@ -331,32 +384,29 @@ class MainWindow(QMainWindow):
             if shutil.which("xdg-open"):
                 subprocess.Popen(["xdg-open", path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
                 return
-
             for opener in ["gio", "mimeo", "handlr"]:
                 if shutil.which(opener):
                     subprocess.Popen([opener, "open", path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
                     return
-
             QMessageBox.warning(self, "Aetheris", f"No default opener found for:\n{path}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to open file: {e}")
 
     def open_context_menu(self, position):
-        index = self.tree.indexAt(position)
-        if not index.isValid():
+        item = self.table.itemAt(position)
+        if not item:
             return
-        path = self.model.filePath(index)
-        
+        row = item.row()
+        target_item = self.table.item(row, 0)
+        path = target_item.data(Qt.ItemDataRole.UserRole)
         menu = QMenu(self)
         act_open = QAction(self.t("open"), self)
-        act_open.triggered.connect(lambda: self.on_item_double_clicked(index))
+        act_open.triggered.connect(lambda: self.on_row_double_clicked(row, 0))
         menu.addAction(act_open)
-
         act_delete = QAction(self.t("delete"), self)
         act_delete.triggered.connect(lambda: self.delete_item(path))
         menu.addAction(act_delete)
-
-        menu.exec(self.tree.viewport().mapToGlobal(position))
+        menu.exec(self.table.viewport().mapToGlobal(position))
 
     def delete_item(self, path):
         reply = QMessageBox.question(
