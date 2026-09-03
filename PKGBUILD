@@ -1,4 +1,3 @@
-# Maintainer: Miguel Saito Garcia <migsaito>
 pkgname=aetheris-file-manager-by-miguel
 pkgver=0.1.0
 pkgrel=1
@@ -8,17 +7,20 @@ url="https://github.com/migsaito/aetheris-file-manager-by-miguel"
 license=('MIT')
 depends=('python' 'python-pyqt6' 'qt6-svg' 'xdg-utils')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
-source=("git+https://github.com/migsaito/aetheris-file-manager-by-miguel.git")
+source=("$pkgname::git+https://github.com/migsaito/aetheris-file-manager-by-miguel.git")
 sha256sums=('SKIP')
 
 build() {
-    cd "$pkgname"
+    cd "$srcdir/$pkgname"
     python -m build --wheel --no-isolation
 }
 
 package() {
-    cd "$pkgname"
+    cd "$srcdir/$pkgname"
     python -m installer --destdir="$pkgdir" dist/*.whl
     install -Dm644 aetheris-file-manager-by-miguel.desktop "$pkgdir/usr/share/applications/aetheris-file-manager-by-miguel.desktop"
+    install -Dm644 logo.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/aetheris-file-manager-by-miguel.png"
+    install -Dm644 logo.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/aetheris-file-manager-by-miguel.png"
+    install -Dm644 logo.png "$pkgdir/usr/share/icons/hicolor/scalable/apps/aetheris-file-manager-by-miguel.png"
     install -Dm644 logo.png "$pkgdir/usr/share/pixmaps/aetheris-file-manager-by-miguel.png"
 }
