@@ -180,6 +180,11 @@ class MainWindow(QMainWindow):
         self.icon_file = render_svg_icon(SVG_FILE)
         self.setStyleSheet(STANDALONE_STYLE)
         self.init_ui()
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logo.png")
+        if not os.path.exists(icon_path):
+            icon_path = "/usr/share/pixmaps/aetheris-file-manager-by-miguel.png"
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         self.apply_translations()
         self.go_to(self.current_path)
 
