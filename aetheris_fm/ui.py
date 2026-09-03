@@ -5,14 +5,12 @@ import shutil
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QComboBox, QFrame, QLabel,
-    QTreeView, QHeaderView, QMessageBox, QMenu, QSplitter,
-    QListWidget, QListWidgetItem, QStyle
+    QTreeView, QHeaderView, QMessageBox, QMenu
 )
-from PyQt6.QtCore import QDir, Qt, QSettings, QSize
-from PyQt6.QtGui import QFileSystemModel, QAction, QIcon, QFont, QColor, QPalette
+from PyQt6.QtCore import QDir, Qt, QSettings
+from PyQt6.QtGui import QFileSystemModel, QAction, QIcon
 from aetheris_fm.locales import TRANSLATIONS
 
-# Folha de estilo independente (Dark / Modern neutro compatível em qualquer DE)
 STANDALONE_STYLE = """
 QMainWindow {
     background-color: #1e1e24;
@@ -24,7 +22,6 @@ QWidget {
     font-size: 13px;
 }
 
-/* Barra Superior e Entradas */
 QLineEdit {
     background-color: #2b2b36;
     border: 1px solid #3d3d4d;
@@ -38,7 +35,6 @@ QLineEdit:focus {
     border: 1px solid #6371de;
 }
 
-/* Botões de Navegação e Controlo */
 QPushButton {
     background-color: #2b2b36;
     border: 1px solid #3d3d4d;
@@ -57,7 +53,6 @@ QPushButton:pressed {
     background-color: #22222b;
 }
 
-/* Seletor de Idiomas */
 QComboBox {
     background-color: #2b2b36;
     border: 1px solid #3d3d4d;
@@ -81,7 +76,6 @@ QComboBox QAbstractItemView {
     outline: none;
 }
 
-/* Árvore de Ficheiros e Pastas */
 QTreeView {
     background-color: #18181c;
     border: 1px solid #2b2b36;
@@ -106,7 +100,6 @@ QTreeView::item:selected {
     color: #ffffff;
 }
 
-/* Cabeçalho das Colunas */
 QHeaderView::section {
     background-color: #22222b;
     color: #a0a0b0;
@@ -117,7 +110,6 @@ QHeaderView::section {
     font-weight: 600;
 }
 
-/* Menu de Contexto */
 QMenu {
     background-color: #262633;
     border: 1px solid #3d3d4d;
@@ -135,7 +127,6 @@ QMenu::item:selected {
     color: #ffffff;
 }
 
-/* Barra de Scroll */
 QScrollBar:vertical {
     border: none;
     background: #18181c;
@@ -163,16 +154,14 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.settings = QSettings("Aetheris", "FileManagerByMiguel")
         
-        # Recupera idioma guardado ou assume o padrão
-        saved_lang = self.settings.value("language", "pt_PT")
-        self.current_lang = saved_lang if saved_lang in TRANSLATIONS else "pt_PT"
+        # INICIALIZAÇÃO FIXA EM EN_US:
+        # Por padrão a aplicação inicia sempre em inglês dos EUA
+        self.current_lang = "en_US"
         
         self.history = []
         self.history_index = -1
         
-        # Forçar independência total de estilo
         self.setStyleSheet(STANDALONE_STYLE)
-        
         self.init_ui()
         self.apply_translations()
 
@@ -189,7 +178,7 @@ class MainWindow(QMainWindow):
         self.main_layout.setContentsMargins(10, 10, 10, 10)
         self.main_layout.setSpacing(8)
 
-        # Aviso Root independente (não depende de alertas do sistema)
+        # Banner de Root removível
         is_root = (os.geteuid() == 0)
         show_root_banner = self.settings.value("show_root_banner", "true") == "true"
         
@@ -217,7 +206,7 @@ class MainWindow(QMainWindow):
         else:
             self.root_frame = None
 
-        # Barra de Navegação Independente
+        # Barra de Navegação
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(6)
         
@@ -238,12 +227,12 @@ class MainWindow(QMainWindow):
         self.path_input = QLineEdit()
         self.path_input.returnPressed.connect(self.navigate_to_path)
 
-        # Seletor de Idioma
+        # Seletor de Idioma (Inicia selecionado em English US)
         self.lang_combo = QComboBox()
         for code, data in TRANSLATIONS.items():
             self.lang_combo.addItem(data["lang_name"], code)
         
-        index = self.lang_combo.findData(self.current_lang)
+        index = self.lang_combo.findData("en_US")
         if index != -1:
             self.lang_combo.setCurrentIndex(index)
         self.lang_combo.currentIndexChanged.connect(self.change_language)
@@ -256,7 +245,7 @@ class MainWindow(QMainWindow):
         nav_layout.addWidget(self.lang_combo)
         self.main_layout.addLayout(nav_layout)
 
-        # Modelo e Visualizador de Ficheiros
+        # Visualizador de Arquivos
         self.model = QFileSystemModel()
         self.model.setRootPath(QDir.rootPath())
         self.model.setFilter(QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot | QDir.Filter.Hidden)
@@ -285,7 +274,6 @@ class MainWindow(QMainWindow):
         new_lang = self.lang_combo.currentData()
         if new_lang:
             self.current_lang = new_lang
-            self.settings.setValue("language", new_lang)
             self.apply_translations()
 
     def apply_translations(self):
@@ -339,22 +327,19 @@ class MainWindow(QMainWindow):
             self.open_file_autonomously(path)
 
     def open_file_autonomously(self, path):
-        """Abertura de ficheiro independente de ambiente."""
         try:
-            # Tenta xdg-open primeiro se disponível
             if shutil.which("xdg-open"):
                 subprocess.Popen(["xdg-open", path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
                 return
 
-            # Fallbacks manuais comuns no Linux
             for opener in ["gio", "mimeo", "handlr"]:
                 if shutil.which(opener):
                     subprocess.Popen([opener, "open", path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
                     return
 
-            QMessageBox.warning(self, "Aetheris", f"Não foi encontrado um abridor padrão para o ficheiro:\n{path}")
+            QMessageBox.warning(self, "Aetheris", f"No default opener found for:\n{path}")
         except Exception as e:
-            QMessageBox.critical(self, "Erro", f"Falha ao abrir ficheiro: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to open file: {e}")
 
     def open_context_menu(self, position):
         index = self.tree.indexAt(position)
@@ -388,4 +373,4 @@ class MainWindow(QMainWindow):
                     os.remove(path)
                 self.nav_refresh()
             except Exception as e:
-                QMessageBox.critical(self, "Erro", str(e))
+                QMessageBox.critical(self, "Error", str(e))
