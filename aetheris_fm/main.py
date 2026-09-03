@@ -10,18 +10,18 @@ from aetheris_fm.ui import MainWindow
 
 def create_standalone_palette():
     palette = QPalette()
-    palette.setColor(QPalette.ColorRole.Window, QColor("#1e1e24"))
-    palette.setColor(QPalette.ColorRole.WindowText, QColor("#e0e0e0"))
-    palette.setColor(QPalette.ColorRole.Base, QColor("#18181c"))
-    palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#1f1f26"))
-    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#2b2b36"))
-    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#ffffff"))
-    palette.setColor(QPalette.ColorRole.Text, QColor("#ffffff"))
-    palette.setColor(QPalette.ColorRole.Button, QColor("#2b2b36"))
-    palette.setColor(QPalette.ColorRole.ButtonText, QColor("#f0f0f0"))
-    palette.setColor(QPalette.ColorRole.BrightText, QColor("#ff5555"))
-    palette.setColor(QPalette.ColorRole.Highlight, QColor("#4a5bcf"))
-    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#ffffff"))
+    palette.setColor(QPalette.ColorRole.Window, QColor("#1e1e2e"))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor("#cdd6f4"))
+    palette.setColor(QPalette.ColorRole.Base, QColor("#181825"))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#1e1e2e"))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#313244"))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#cdd6f4"))
+    palette.setColor(QPalette.ColorRole.Text, QColor("#cdd6f4"))
+    palette.setColor(QPalette.ColorRole.Button, QColor("#313244"))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor("#cdd6f4"))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor("#f38ba8"))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor("#89b4fa"))
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#1e1e2e"))
     return palette
 
 def main():

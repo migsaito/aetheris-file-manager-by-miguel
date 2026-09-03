@@ -14,10 +14,10 @@ from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QColor
 from PyQt6.QtSvg import QSvgRenderer
 from aetheris_fm.locales import TRANSLATIONS
 
-SVG_FOLDER = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f5c211"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>"""
-SVG_FILE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#a0a0b8"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>"""
+SVG_FOLDER = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#8caaee"><path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/></svg>"""
+SVG_FILE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#babbf1"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>"""
 
-def render_svg_icon(svg_str, size=20):
+def render_svg_icon(svg_str, size=24):
     renderer = QSvgRenderer(QByteArray(svg_str.encode('utf-8')))
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
@@ -28,134 +28,139 @@ def render_svg_icon(svg_str, size=20):
 
 STANDALONE_STYLE = """
 QMainWindow {
-    background-color: #1a1a22;
+    background-color: #1e1e2e;
 }
 
 QWidget {
-    color: #e4e4ee;
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    font-size: 13px;
+    color: #cdd6f4;
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 14px;
 }
 
 QLineEdit {
-    background-color: #242430;
-    border: 1px solid #363648;
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #ffffff;
-    selection-background-color: #4a5bcf;
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #cdd6f4;
+    selection-background-color: #89b4fa;
+    selection-color: #1e1e2e;
 }
 
 QLineEdit:focus {
-    border: 1px solid #6371de;
+    border: 1px solid #89b4fa;
 }
 
 QPushButton {
-    background-color: #242430;
-    border: 1px solid #363648;
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #f0f0f0;
-    font-weight: 500;
+    background-color: #313244;
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: #cdd6f4;
+    font-weight: 600;
 }
 
 QPushButton:hover {
-    background-color: #303040;
-    border-color: #4b4b60;
+    background-color: #45475a;
+    border-color: #585b70;
 }
 
 QPushButton:pressed {
-    background-color: #1b1b24;
+    background-color: #585b70;
 }
 
 QComboBox {
-    background-color: #242430;
-    border: 1px solid #363648;
-    border-radius: 6px;
-    padding: 4px 10px;
-    color: #f0f0f0;
-    min-width: 130px;
+    background-color: #313244;
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    padding: 6px 14px;
+    color: #cdd6f4;
+    font-weight: 500;
+    min-width: 140px;
 }
 
 QComboBox::drop-down {
     border: none;
-    width: 20px;
+    width: 24px;
 }
 
 QComboBox QAbstractItemView {
-    background-color: #242430;
-    border: 1px solid #363648;
-    selection-background-color: #4a5bcf;
-    selection-color: #ffffff;
-    color: #ffffff;
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    selection-background-color: #89b4fa;
+    selection-color: #1e1e2e;
+    color: #cdd6f4;
     outline: none;
 }
 
 QTableWidget {
-    background-color: #14141a;
-    border: 1px solid #242430;
-    border-radius: 8px;
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 12px;
     gridline-color: transparent;
     outline: none;
 }
 
 QTableWidget::item {
-    height: 30px;
-    padding-left: 6px;
+    height: 38px;
+    padding-left: 8px;
     border: none;
+    border-bottom: 1px solid #1e1e2e;
 }
 
 QTableWidget::item:hover {
-    background-color: #22222f;
+    background-color: #313244;
 }
 
 QTableWidget::item:selected {
-    background-color: #35428a;
-    color: #ffffff;
+    background-color: #89b4fa;
+    color: #1e1e2e;
 }
 
 QHeaderView::section {
-    background-color: #1f1f2a;
-    color: #9898aa;
-    padding: 8px 10px;
+    background-color: #11111b;
+    color: #a6adc8;
+    padding: 12px 14px;
     border: none;
-    border-bottom: 2px solid #2a2a3a;
-    border-right: 1px solid #242430;
-    font-weight: 600;
+    border-bottom: 2px solid #313244;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
 }
 
 QMenu {
-    background-color: #22222e;
-    border: 1px solid #363648;
-    border-radius: 6px;
-    padding: 4px;
+    background-color: #181825;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    padding: 6px;
 }
 
 QMenu::item {
-    padding: 6px 24px 6px 12px;
-    border-radius: 4px;
+    padding: 8px 28px 8px 16px;
+    border-radius: 6px;
 }
 
 QMenu::item:selected {
-    background-color: #4a5bcf;
-    color: #ffffff;
+    background-color: #89b4fa;
+    color: #1e1e2e;
 }
 
 QScrollBar:vertical {
     border: none;
-    background: #14141a;
-    width: 10px;
-    margin: 0;
+    background: transparent;
+    width: 12px;
+    margin: 4px;
 }
 
 QScrollBar::handle:vertical {
-    background: #2e2e3e;
-    min-height: 20px;
-    border-radius: 5px;
+    background: #45475a;
+    min-height: 24px;
+    border-radius: 6px;
 }
 
 QScrollBar::handle:vertical:hover {
-    background: #424258;
+    background: #585b70;
 }
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
@@ -182,28 +187,28 @@ class MainWindow(QMainWindow):
         return TRANSLATIONS.get(self.current_lang, {}).get(key, key)
 
     def init_ui(self):
-        self.resize(1050, 680)
-        self.setMinimumSize(700, 420)
+        self.resize(1100, 720)
+        self.setMinimumSize(800, 500)
         central = QWidget()
         self.setCentralWidget(central)
         self.main_layout = QVBoxLayout(central)
-        self.main_layout.setContentsMargins(10, 10, 10, 10)
-        self.main_layout.setSpacing(8)
+        self.main_layout.setContentsMargins(14, 14, 14, 14)
+        self.main_layout.setSpacing(12)
         is_root = (os.geteuid() == 0)
         show_root_banner = self.settings.value("show_root_banner", "true") == "true"
         
         if is_root and show_root_banner:
             self.root_frame = QFrame()
             self.root_frame.setStyleSheet(
-                "background-color: #721818; color: #ffe6e6; border: 1px solid #942525; border-radius: 6px; padding: 6px;"
+                "background-color: #f38ba8; color: #11111b; border-radius: 8px; padding: 8px;"
             )
             root_layout = QHBoxLayout(self.root_frame)
-            root_layout.setContentsMargins(10, 4, 10, 4)
+            root_layout.setContentsMargins(12, 4, 12, 4)
             self.root_label = QLabel()
-            self.root_label.setStyleSheet("font-weight: bold; background: transparent; border: none;")
+            self.root_label.setStyleSheet("font-weight: 800; background: transparent; border: none;")
             self.btn_dismiss_root = QPushButton()
             self.btn_dismiss_root.setStyleSheet(
-                "background: #471111; color: #ffffff; border: 1px solid #721818; padding: 4px 10px; border-radius: 4px;"
+                "background: #11111b; color: #f38ba8; border: none; padding: 6px 14px; border-radius: 6px;"
             )
             self.btn_dismiss_root.clicked.connect(self.dismiss_root_warning)
             root_layout.addWidget(self.root_label)
@@ -214,12 +219,12 @@ class MainWindow(QMainWindow):
             self.root_frame = None
 
         nav_layout = QHBoxLayout()
-        nav_layout.setSpacing(6)
+        nav_layout.setSpacing(8)
         self.btn_back = QPushButton("◀")
-        self.btn_back.setFixedWidth(38)
+        self.btn_back.setFixedWidth(44)
         self.btn_back.clicked.connect(self.nav_back)
         self.btn_forward = QPushButton("▶")
-        self.btn_forward.setFixedWidth(38)
+        self.btn_forward.setFixedWidth(44)
         self.btn_forward.clicked.connect(self.nav_forward)
         self.btn_home = QPushButton()
         self.btn_home.clicked.connect(self.nav_home)
@@ -288,11 +293,11 @@ class MainWindow(QMainWindow):
         if size_bytes < 1024:
             return f"{size_bytes} B"
         elif size_bytes < 1024 * 1024:
-            return f"{size_bytes / 1024:.1f} KiB"
+            return f"{size_bytes / 1024:.1f} KB"
         elif size_bytes < 1024 * 1024 * 1024:
-            return f"{size_bytes / (1024 * 1024):.1f} MiB"
+            return f"{size_bytes / (1024 * 1024):.1f} MB"
         else:
-            return f"{size_bytes / (1024 * 1024 * 1024):.1f} GiB"
+            return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
 
     def load_directory(self, path):
         if not os.path.isdir(path):
