@@ -11,6 +11,12 @@ TRANSLATIONS = {
         "open": "Open",
         "delete": "Delete",
         "confirm_del": "Are you sure you want to delete this item?",
+        "col_name": "Name",
+        "col_size": "Size",
+        "col_type": "Type",
+        "col_date": "Date Modified",
+        "type_folder": "Folder",
+        "type_file": "File",
         "lang_name": "English (US)"
     },
     "en_GB": {
@@ -25,6 +31,12 @@ TRANSLATIONS = {
         "open": "Open",
         "delete": "Delete",
         "confirm_del": "Are you certain you wish to delete this item?",
+        "col_name": "Name",
+        "col_size": "Size",
+        "col_type": "Type",
+        "col_date": "Date Modified",
+        "type_folder": "Folder",
+        "type_file": "File",
         "lang_name": "English (UK)"
     },
     "pt_BR": {
@@ -39,6 +51,12 @@ TRANSLATIONS = {
         "open": "Abrir",
         "delete": "Excluir",
         "confirm_del": "Tem certeza que deseja excluir este item?",
+        "col_name": "Nome",
+        "col_size": "Tamanho",
+        "col_type": "Tipo",
+        "col_date": "Data de Modificação",
+        "type_folder": "Pasta",
+        "type_file": "Arquivo",
         "lang_name": "Português (Brasil)"
     },
     "pt_PT": {
@@ -53,6 +71,12 @@ TRANSLATIONS = {
         "open": "Abrir",
         "delete": "Eliminar",
         "confirm_del": "Tem a certeza que deseja eliminar este item?",
+        "col_name": "Nome",
+        "col_size": "Tamanho",
+        "col_type": "Tipo",
+        "col_date": "Data de Modificação",
+        "type_folder": "Pasta",
+        "type_file": "Ficheiro",
         "lang_name": "Português (Portugal)"
     },
     "es_ES": {
@@ -67,6 +91,12 @@ TRANSLATIONS = {
         "open": "Abrir",
         "delete": "Eliminar",
         "confirm_del": "¿Está seguro de que desea eliminar este elemento?",
+        "col_name": "Nombre",
+        "col_size": "Tamaño",
+        "col_type": "Tipo",
+        "col_date": "Fecha de Modificación",
+        "type_folder": "Carpeta",
+        "type_file": "Archivo",
         "lang_name": "Español"
     },
     "ja_JP": {
@@ -81,6 +111,12 @@ TRANSLATIONS = {
         "open": "開く",
         "delete": "削除",
         "confirm_del": "この項目を削除してもよろしいですか？",
+        "col_name": "名前",
+        "col_size": "サイズ",
+        "col_type": "種類",
+        "col_date": "更新日時",
+        "type_folder": "フォルダ",
+        "type_file": "ファイル",
         "lang_name": "日本語"
     }
 }
