@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=Aetheris File Manager
+Name=Aetheris File Manager by Miguel
 GenericName=File Manager
 Comment=Standalone lightweight modern file manager
 Exec=aetheris-file-manager-by-miguel
@@ -7,4 +7,5 @@ Icon=/usr/share/pixmaps/aetheris-file-manager-by-miguel.png
 Terminal=false
 Type=Application
 Categories=System;FileManager;Utility;
+StartupWMClass=aetheris-file-manager-by-miguel
 Keywords=files;folders;explorer;manager;
