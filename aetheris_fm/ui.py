@@ -7,10 +7,20 @@ from datetime import datetime
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QLineEdit, QTableWidget, QTableWidgetItem,
                              QHeaderView, QComboBox, QSplitter, QListWidget, QListWidgetItem,
-                             QStatusBar, QMenu, QMessageBox, QInputDialog)
+                             QStatusBar, QMenu, QMessageBox, QInputDialog, QStyle)
 from PyQt6.QtGui import QIcon, QColor, QAction, QShortcut, QKeySequence
 from PyQt6.QtCore import Qt, QSize
 from aetheris_fm.locales import TRANSLATIONS
+
+class NumericTableWidgetItem(QTableWidgetItem):
+    def __init__(self, text, sort_value):
+        super().__init__(text)
+        self.sort_value = sort_value
+
+    def __lt__(self, other):
+        if isinstance(other, NumericTableWidgetItem):
+            return self.sort_value < other.sort_value
+        return super().__lt__(other)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -24,13 +34,15 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("Aetheris File Manager by Miguel")
-        self.resize(1100, 700)
+        self.resize(1150, 750)
 
         icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logo.png")
         if not os.path.exists(icon_path):
             icon_path = "/usr/share/pixmaps/aetheris-file-manager-by-miguel.png"
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
+
+        self.setup_menu_bar()
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -52,23 +64,28 @@ class MainWindow(QMainWindow):
 
         self.btn_home = QPushButton()
         self.btn_home.setFixedHeight(35)
+        self.btn_home.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirHomeIcon))
         self.btn_home.clicked.connect(self.go_home)
 
         self.btn_refresh = QPushButton()
         self.btn_refresh.setFixedHeight(35)
+        self.btn_refresh.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
         self.btn_refresh.clicked.connect(self.populate_list)
 
         self.path_input = QLineEdit()
         self.path_input.setFixedHeight(35)
+        self.path_input.setStyleSheet("padding: 0 10px; font-size: 14px;")
         self.path_input.returnPressed.connect(self.navigate_from_input)
 
         self.search_input = QLineEdit()
         self.search_input.setFixedHeight(35)
-        self.search_input.setFixedWidth(200)
+        self.search_input.setFixedWidth(250)
+        self.search_input.setStyleSheet("padding: 0 10px; font-size: 14px;")
         self.search_input.textChanged.connect(self.filter_items)
 
         self.combo_lang = QComboBox()
         self.combo_lang.setFixedHeight(35)
+        self.combo_lang.setStyleSheet("padding: 0 10px; font-size: 14px;")
         self.combo_lang.addItems(TRANSLATIONS.keys())
         self.combo_lang.currentTextChanged.connect(self.change_language)
 
@@ -85,7 +102,13 @@ class MainWindow(QMainWindow):
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
 
         self.sidebar = QListWidget()
-        self.sidebar.setFixedWidth(200)
+        self.sidebar.setFixedWidth(220)
+        self.sidebar.setIconSize(QSize(20, 20))
+        self.sidebar.setStyleSheet("""
+            QListWidget { font-size: 14px; padding: 5px; outline: 0; }
+            QListWidget::item { padding: 8px; margin-bottom: 2px; border-radius: 4px; }
+            QListWidget::item:selected { background-color: #313244; }
+        """)
         self.sidebar.itemClicked.connect(self.sidebar_nav)
         self.splitter.addWidget(self.sidebar)
 
@@ -97,17 +120,26 @@ class MainWindow(QMainWindow):
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
+        self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setIconSize(QSize(24, 24))
+        self.table.setStyleSheet("""
+            QTableWidget { font-size: 14px; outline: 0; }
+            QTableWidget::item { padding: 4px; }
+        """)
+        
         self.table.cellDoubleClicked.connect(self.on_item_double_clicked)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
         self.table.itemSelectionChanged.connect(self.update_status_bar)
 
         self.splitter.addWidget(self.table)
-        self.splitter.setSizes([200, 900])
+        self.splitter.setSizes([220, 930])
         main_layout.addWidget(self.splitter)
 
         self.status_bar = QStatusBar()
+        self.status_bar.setStyleSheet("font-size: 13px;")
         self.setStatusBar(self.status_bar)
 
         self.history_back = []
@@ -115,10 +147,54 @@ class MainWindow(QMainWindow):
 
         self.setup_shortcuts()
         self.update_sidebar()
-        self.change_language("English (US)")
+        
+        saved_lang_index = self.combo_lang.findText("Português (Brasil)")
+        if saved_lang_index >= 0:
+            self.combo_lang.setCurrentIndex(saved_lang_index)
+        else:
+            self.change_language("English (US)")
+
+    def setup_menu_bar(self):
+        menubar = self.menuBar()
+        self.menu_file = menubar.addMenu("File")
+        self.menu_view = menubar.addMenu("View")
+        self.menu_help = menubar.addMenu("Help")
+
+        self.action_new_folder = QAction("New Folder", self)
+        self.action_new_folder.triggered.connect(self.create_folder)
+        self.action_new_file = QAction("New File", self)
+        self.action_new_file.triggered.connect(self.create_file)
+        self.action_exit = QAction("Exit", self)
+        self.action_exit.triggered.connect(self.close)
+
+        self.menu_file.addAction(self.action_new_folder)
+        self.menu_file.addAction(self.action_new_file)
+        self.menu_file.addSeparator()
+        self.menu_file.addAction(self.action_exit)
+
+        self.action_toggle_hidden = QAction("Show Hidden Files", self, checkable=True)
+        self.action_toggle_hidden.setChecked(self.show_hidden)
+        self.action_toggle_hidden.triggered.connect(self.toggle_hidden_menu)
+        self.action_refresh = QAction("Refresh", self)
+        self.action_refresh.triggered.connect(self.populate_list)
+
+        self.menu_view.addAction(self.action_toggle_hidden)
+        self.menu_view.addAction(self.action_refresh)
+
+        self.action_about = QAction("About Aetheris", self)
+        self.action_about.triggered.connect(self.show_about)
+        self.menu_help.addAction(self.action_about)
+
+    def show_about(self):
+        t = TRANSLATIONS[self.current_language]
+        QMessageBox.about(self, t["menu_about"], "Aetheris File Manager\nCreated by Miguel Saito Garcia.\nBuilt with PyQt6 on Arch Linux.")
+
+    def toggle_hidden_menu(self, state):
+        self.show_hidden = state
+        self.populate_list()
 
     def setup_shortcuts(self):
-        QShortcut(QKeySequence("Ctrl+H"), self).activated.connect(self.toggle_hidden)
+        QShortcut(QKeySequence("Ctrl+H"), self).activated.connect(self.toggle_hidden_shortcut)
         QShortcut(QKeySequence("F5"), self).activated.connect(self.populate_list)
         QShortcut(QKeySequence("Ctrl+R"), self).activated.connect(self.populate_list)
         QShortcut(QKeySequence("Alt+Up"), self).activated.connect(self.go_up)
@@ -129,8 +205,9 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("Ctrl+V"), self).activated.connect(self.paste_items)
         QShortcut(QKeySequence("Ctrl+F"), self).activated.connect(self.search_input.setFocus)
 
-    def toggle_hidden(self):
+    def toggle_hidden_shortcut(self):
         self.show_hidden = not self.show_hidden
+        self.action_toggle_hidden.setChecked(self.show_hidden)
         self.populate_list()
 
     def go_up(self):
@@ -144,6 +221,18 @@ class MainWindow(QMainWindow):
         self.btn_home.setText(t["home"])
         self.btn_refresh.setText(t["refresh"])
         self.search_input.setPlaceholderText(t["search_placeholder"])
+        
+        self.menu_file.setTitle(t["menu_file"])
+        self.menu_view.setTitle(t["menu_view"])
+        self.menu_help.setTitle(t["menu_help"])
+        
+        self.action_new_folder.setText(t["new_folder"])
+        self.action_new_file.setText(t["new_file"])
+        self.action_exit.setText(t["menu_exit"])
+        self.action_toggle_hidden.setText(t["menu_hidden"])
+        self.action_refresh.setText(t["refresh"])
+        self.action_about.setText(t["menu_about"])
+
         self.table.setHorizontalHeaderLabels([t["name"], t["size"], t["type"], t["date_modified"]])
         self.update_sidebar()
         self.populate_list()
@@ -151,18 +240,24 @@ class MainWindow(QMainWindow):
     def update_sidebar(self):
         self.sidebar.clear()
         t = TRANSLATIONS[self.current_language]
+        
+        icon_home = self.style().standardIcon(QStyle.StandardPixmap.SP_DirHomeIcon)
+        icon_dir = self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon)
+        icon_drive = self.style().standardIcon(QStyle.StandardPixmap.SP_DriveHDIcon)
+        icon_trash = self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon)
+
         places = [
-            (t["home"], os.path.expanduser("~")),
-            (t["documents"], os.path.expanduser("~/Documents")),
-            (t["downloads"], os.path.expanduser("~/Downloads")),
-            (t["pictures"], os.path.expanduser("~/Pictures")),
-            (t["music"], os.path.expanduser("~/Music")),
-            (t["videos"], os.path.expanduser("~/Videos")),
-            (t["root"], "/"),
+            (t["home"], os.path.expanduser("~"), icon_home),
+            (t["documents"], os.path.expanduser("~/Documents"), icon_dir),
+            (t["downloads"], os.path.expanduser("~/Downloads"), icon_dir),
+            (t["pictures"], os.path.expanduser("~/Pictures"), icon_dir),
+            (t["music"], os.path.expanduser("~/Music"), icon_dir),
+            (t["videos"], os.path.expanduser("~/Videos"), icon_dir),
+            (t["root"], "/", icon_drive),
         ]
-        for name, path in places:
+        for name, path, icon in places:
             if os.path.exists(path) or path == "/":
-                item = QListWidgetItem(name)
+                item = QListWidgetItem(icon, name)
                 item.setData(Qt.ItemDataRole.UserRole, path)
                 self.sidebar.addItem(item)
 
@@ -222,15 +317,20 @@ class MainWindow(QMainWindow):
         return f"{size:.1f} PB"
 
     def populate_list(self):
+        self.table.setSortingEnabled(False)
         self.table.setRowCount(0)
         try:
             items = os.listdir(self.current_path)
         except PermissionError:
+            self.table.setSortingEnabled(True)
             return
 
         directories = []
         files = []
         t = TRANSLATIONS[self.current_language]
+
+        icon_dir = self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon)
+        icon_file = self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon)
 
         for item in items:
             if not self.show_hidden and item.startswith('.'):
@@ -239,11 +339,13 @@ class MainWindow(QMainWindow):
             try:
                 stat_info = os.stat(full_path)
                 mtime = datetime.fromtimestamp(stat_info.st_mtime).strftime('%Y-%m-%d %H:%M')
+                
                 if stat.S_ISDIR(stat_info.st_mode):
-                    directories.append((item, "", t["folder"], mtime, full_path))
+                    directories.append((item, 0, "", t["folder"], mtime, full_path, icon_dir))
                 else:
-                    size = self.format_size(stat_info.st_size)
-                    files.append((item, size, t["file"], mtime, full_path))
+                    raw_size = stat_info.st_size
+                    fmt_size = self.format_size(raw_size)
+                    files.append((item, raw_size, fmt_size, t["file"], mtime, full_path, icon_file))
             except Exception:
                 continue
 
@@ -253,13 +355,21 @@ class MainWindow(QMainWindow):
 
         self.table.setRowCount(len(all_items))
         for row, data in enumerate(all_items):
-            for col, text in enumerate(data[:4]):
-                widget_item = QTableWidgetItem(text)
-                widget_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
-                if col == 0 and data[2] == t["folder"]:
-                    widget_item.setForeground(QColor("#89b4fa"))
-                self.table.setItem(row, col, widget_item)
-            self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, data[4])
+            item_name = QTableWidgetItem(data[6], data[0])
+            item_name.setData(Qt.ItemDataRole.UserRole, data[5])
+            if data[3] == t["folder"]:
+                item_name.setForeground(QColor("#89b4fa"))
+            
+            item_size = NumericTableWidgetItem(data[2], data[1])
+            item_type = QTableWidgetItem(data[3])
+            item_date = QTableWidgetItem(data[4])
+
+            self.table.setItem(row, 0, item_name)
+            self.table.setItem(row, 1, item_size)
+            self.table.setItem(row, 2, item_type)
+            self.table.setItem(row, 3, item_date)
+
+        self.table.setSortingEnabled(True)
         self.update_status_bar()
 
     def filter_items(self, query):
@@ -293,9 +403,14 @@ class MainWindow(QMainWindow):
         if not selected_items:
             action_new_folder = QAction(t["new_folder"], self)
             action_new_folder.triggered.connect(self.create_folder)
+            action_new_file = QAction(t["new_file"], self)
+            action_new_file.triggered.connect(self.create_file)
+            
             menu.addAction(action_new_folder)
+            menu.addAction(action_new_file)
             
             if self.clipboard_paths:
+                menu.addSeparator()
                 action_paste = QAction(t["paste"], self)
                 action_paste.triggered.connect(self.paste_items)
                 menu.addAction(action_paste)
@@ -336,8 +451,21 @@ class MainWindow(QMainWindow):
         t = TRANSLATIONS[self.current_language]
         text, ok = QInputDialog.getText(self, t["new_folder"], t["enter_name"])
         if ok and text:
-            os.makedirs(os.path.join(self.current_path, text), exist_ok=True)
-            self.populate_list()
+            try:
+                os.makedirs(os.path.join(self.current_path, text), exist_ok=True)
+                self.populate_list()
+            except Exception as e:
+                QMessageBox.critical(self, t["error"], str(e))
+
+    def create_file(self):
+        t = TRANSLATIONS[self.current_language]
+        text, ok = QInputDialog.getText(self, t["new_file"], t["enter_name"])
+        if ok and text:
+            try:
+                open(os.path.join(self.current_path, text), 'a').close()
+                self.populate_list()
+            except Exception as e:
+                QMessageBox.critical(self, t["error"], str(e))
 
     def copy_selected(self):
         self.clipboard_paths = self.get_selected_paths()
@@ -349,6 +477,7 @@ class MainWindow(QMainWindow):
 
     def paste_items(self):
         if not self.clipboard_paths: return
+        t = TRANSLATIONS[self.current_language]
         for path in self.clipboard_paths:
             target = os.path.join(self.current_path, os.path.basename(path))
             try:
@@ -359,8 +488,9 @@ class MainWindow(QMainWindow):
                         shutil.copy2(path, target)
                 elif self.clipboard_action == "cut":
                     shutil.move(path, target)
-            except Exception:
-                pass
+            except Exception as e:
+                QMessageBox.critical(self, t["error"], str(e))
+                
         if self.clipboard_action == "cut":
             self.clipboard_paths = []
             self.clipboard_action = None
@@ -373,19 +503,23 @@ class MainWindow(QMainWindow):
         t = TRANSLATIONS[self.current_language]
         text, ok = QInputDialog.getText(self, t["rename"], t["enter_name"], text=os.path.basename(target))
         if ok and text:
-            os.rename(target, os.path.join(self.current_path, text))
-            self.populate_list()
+            try:
+                os.rename(target, os.path.join(self.current_path, text))
+                self.populate_list()
+            except Exception as e:
+                QMessageBox.critical(self, t["error"], str(e))
 
     def delete_selected(self):
         paths = self.get_selected_paths()
+        t = TRANSLATIONS[self.current_language]
         for path in paths:
             try:
                 if os.path.isdir(path):
                     shutil.rmtree(path)
                 else:
                     os.remove(path)
-            except Exception:
-                pass
+            except Exception as e:
+                QMessageBox.critical(self, t["error"], str(e))
         self.populate_list()
 
     def update_status_bar(self):
