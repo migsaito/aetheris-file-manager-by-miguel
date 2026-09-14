@@ -1,436 +1,401 @@
 import os
 import sys
-import time
 import shutil
 import subprocess
-from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLineEdit, QPushButton, QComboBox, QFrame, QLabel,
-    QTableWidget, QTableWidgetItem, QHeaderView, QMessageBox,
-    QMenu, QAbstractItemView
-)
-from PyQt6.QtCore import Qt, QSettings, QByteArray
-from PyQt6.QtGui import QAction, QIcon, QPixmap, QPainter, QColor
-from PyQt6.QtSvg import QSvgRenderer
+import stat
+from datetime import datetime
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                             QPushButton, QLineEdit, QTableWidget, QTableWidgetItem,
+                             QHeaderView, QComboBox, QSplitter, QListWidget, QListWidgetItem,
+                             QStatusBar, QMenu, QMessageBox, QInputDialog)
+from PyQt6.QtGui import QIcon, QColor, QAction, QShortcut, QKeySequence
+from PyQt6.QtCore import Qt, QSize
 from aetheris_fm.locales import TRANSLATIONS
-
-SVG_FOLDER = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#8caaee"><path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/></svg>"""
-SVG_FILE = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#babbf1"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>"""
-
-def render_svg_icon(svg_str, size=24):
-    renderer = QSvgRenderer(QByteArray(svg_str.encode('utf-8')))
-    pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(pixmap)
-    renderer.render(painter)
-    painter.end()
-    return QIcon(pixmap)
-
-STANDALONE_STYLE = """
-QMainWindow {
-    background-color: #1e1e2e;
-}
-
-QWidget {
-    color: #cdd6f4;
-    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-    font-size: 14px;
-}
-
-QLineEdit {
-    background-color: #181825;
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 8px 14px;
-    color: #cdd6f4;
-    selection-background-color: #89b4fa;
-    selection-color: #1e1e2e;
-}
-
-QLineEdit:focus {
-    border: 1px solid #89b4fa;
-}
-
-QPushButton {
-    background-color: #313244;
-    border: 1px solid #45475a;
-    border-radius: 8px;
-    padding: 8px 16px;
-    color: #cdd6f4;
-    font-weight: 600;
-}
-
-QPushButton:hover {
-    background-color: #45475a;
-    border-color: #585b70;
-}
-
-QPushButton:pressed {
-    background-color: #585b70;
-}
-
-QComboBox {
-    background-color: #313244;
-    border: 1px solid #45475a;
-    border-radius: 8px;
-    padding: 6px 14px;
-    color: #cdd6f4;
-    font-weight: 500;
-    min-width: 140px;
-}
-
-QComboBox::drop-down {
-    border: none;
-    width: 24px;
-}
-
-QComboBox QAbstractItemView {
-    background-color: #181825;
-    border: 1px solid #313244;
-    border-radius: 8px;
-    selection-background-color: #89b4fa;
-    selection-color: #1e1e2e;
-    color: #cdd6f4;
-    outline: none;
-}
-
-QTableWidget {
-    background-color: #181825;
-    border: 1px solid #313244;
-    border-radius: 12px;
-    gridline-color: transparent;
-    outline: none;
-}
-
-QTableWidget::item {
-    height: 38px;
-    padding-left: 8px;
-    border: none;
-    border-bottom: 1px solid #1e1e2e;
-}
-
-QTableWidget::item:hover {
-    background-color: #313244;
-}
-
-QTableWidget::item:selected {
-    background-color: #89b4fa;
-    color: #1e1e2e;
-}
-
-QHeaderView::section {
-    background-color: #11111b;
-    color: #a6adc8;
-    padding: 12px 14px;
-    border: none;
-    border-bottom: 2px solid #313244;
-    font-weight: 700;
-    font-size: 13px;
-    text-transform: uppercase;
-}
-
-QMenu {
-    background-color: #181825;
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 6px;
-}
-
-QMenu::item {
-    padding: 8px 28px 8px 16px;
-    border-radius: 6px;
-}
-
-QMenu::item:selected {
-    background-color: #89b4fa;
-    color: #1e1e2e;
-}
-
-QScrollBar:vertical {
-    border: none;
-    background: transparent;
-    width: 12px;
-    margin: 4px;
-}
-
-QScrollBar::handle:vertical {
-    background: #45475a;
-    min-height: 24px;
-    border-radius: 6px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background: #585b70;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0;
-}
-"""
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.settings = QSettings("Aetheris", "FileManagerByMiguel")
-        self.current_lang = "en_US"
         self.current_path = os.path.expanduser("~")
-        self.history = []
-        self.history_index = -1
-        self.icon_folder = render_svg_icon(SVG_FOLDER)
-        self.icon_file = render_svg_icon(SVG_FILE)
-        self.setStyleSheet(STANDALONE_STYLE)
+        self.current_language = "English (US)"
+        self.show_hidden = False
+        self.clipboard_paths = []
+        self.clipboard_action = None
         self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Aetheris File Manager by Miguel")
+        self.resize(1100, 700)
+
         icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logo.png")
         if not os.path.exists(icon_path):
             icon_path = "/usr/share/pixmaps/aetheris-file-manager-by-miguel.png"
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
-        self.apply_translations()
-        self.go_to(self.current_path)
 
-    def t(self, key):
-        return TRANSLATIONS.get(self.current_lang, {}).get(key, key)
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
-    def init_ui(self):
-        self.resize(1100, 720)
-        self.setMinimumSize(800, 500)
-        central = QWidget()
-        self.setCentralWidget(central)
-        self.main_layout = QVBoxLayout(central)
-        self.main_layout.setContentsMargins(14, 14, 14, 14)
-        self.main_layout.setSpacing(12)
-        is_root = (os.geteuid() == 0)
-        show_root_banner = self.settings.value("show_root_banner", "true") == "true"
-        
-        if is_root and show_root_banner:
-            self.root_frame = QFrame()
-            self.root_frame.setStyleSheet(
-                "background-color: #f38ba8; color: #11111b; border-radius: 8px; padding: 8px;"
-            )
-            root_layout = QHBoxLayout(self.root_frame)
-            root_layout.setContentsMargins(12, 4, 12, 4)
-            self.root_label = QLabel()
-            self.root_label.setStyleSheet("font-weight: 800; background: transparent; border: none;")
-            self.btn_dismiss_root = QPushButton()
-            self.btn_dismiss_root.setStyleSheet(
-                "background: #11111b; color: #f38ba8; border: none; padding: 6px 14px; border-radius: 6px;"
-            )
-            self.btn_dismiss_root.clicked.connect(self.dismiss_root_warning)
-            root_layout.addWidget(self.root_label)
-            root_layout.addStretch()
-            root_layout.addWidget(self.btn_dismiss_root)
-            self.main_layout.addWidget(self.root_frame)
-        else:
-            self.root_frame = None
+        top_bar = QHBoxLayout()
+        top_bar.setSpacing(10)
 
-        nav_layout = QHBoxLayout()
-        nav_layout.setSpacing(8)
         self.btn_back = QPushButton("◀")
-        self.btn_back.setFixedWidth(44)
-        self.btn_back.clicked.connect(self.nav_back)
+        self.btn_back.setFixedSize(40, 35)
+        self.btn_back.clicked.connect(self.go_back)
+
         self.btn_forward = QPushButton("▶")
-        self.btn_forward.setFixedWidth(44)
-        self.btn_forward.clicked.connect(self.nav_forward)
+        self.btn_forward.setFixedSize(40, 35)
+        self.btn_forward.clicked.connect(self.go_forward)
+        self.btn_forward.setEnabled(False)
+
         self.btn_home = QPushButton()
-        self.btn_home.clicked.connect(self.nav_home)
+        self.btn_home.setFixedHeight(35)
+        self.btn_home.clicked.connect(self.go_home)
+
         self.btn_refresh = QPushButton()
-        self.btn_refresh.clicked.connect(self.nav_refresh)
+        self.btn_refresh.setFixedHeight(35)
+        self.btn_refresh.clicked.connect(self.populate_list)
+
         self.path_input = QLineEdit()
-        self.path_input.returnPressed.connect(self.navigate_to_path)
-        self.lang_combo = QComboBox()
-        for code, data in TRANSLATIONS.items():
-            self.lang_combo.addItem(data["lang_name"], code)
-        idx = self.lang_combo.findData("en_US")
-        if idx != -1:
-            self.lang_combo.setCurrentIndex(idx)
-        self.lang_combo.currentIndexChanged.connect(self.change_language)
-        nav_layout.addWidget(self.btn_back)
-        nav_layout.addWidget(self.btn_forward)
-        nav_layout.addWidget(self.btn_home)
-        nav_layout.addWidget(self.btn_refresh)
-        nav_layout.addWidget(self.path_input)
-        nav_layout.addWidget(self.lang_combo)
-        self.main_layout.addLayout(nav_layout)
+        self.path_input.setFixedHeight(35)
+        self.path_input.returnPressed.connect(self.navigate_from_input)
+
+        self.search_input = QLineEdit()
+        self.search_input.setFixedHeight(35)
+        self.search_input.setFixedWidth(200)
+        self.search_input.textChanged.connect(self.filter_items)
+
+        self.combo_lang = QComboBox()
+        self.combo_lang.setFixedHeight(35)
+        self.combo_lang.addItems(TRANSLATIONS.keys())
+        self.combo_lang.currentTextChanged.connect(self.change_language)
+
+        top_bar.addWidget(self.btn_back)
+        top_bar.addWidget(self.btn_forward)
+        top_bar.addWidget(self.btn_home)
+        top_bar.addWidget(self.btn_refresh)
+        top_bar.addWidget(self.path_input)
+        top_bar.addWidget(self.search_input)
+        top_bar.addWidget(self.combo_lang)
+
+        main_layout.addLayout(top_bar)
+
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+
+        self.sidebar = QListWidget()
+        self.sidebar.setFixedWidth(200)
+        self.sidebar.itemClicked.connect(self.sidebar_nav)
+        self.splitter.addWidget(self.sidebar)
 
         self.table = QTableWidget()
         self.table.setColumnCount(4)
-        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.table.setShowGrid(False)
-        self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
-        self.table.cellDoubleClicked.connect(self.on_row_double_clicked)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setShowGrid(False)
+        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.cellDoubleClicked.connect(self.on_item_double_clicked)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
-        self.main_layout.addWidget(self.table)
+        self.table.itemSelectionChanged.connect(self.update_status_bar)
 
-    def dismiss_root_warning(self):
-        if self.root_frame:
-            self.root_frame.setVisible(False)
-            self.settings.setValue("show_root_banner", "false")
+        self.splitter.addWidget(self.table)
+        self.splitter.setSizes([200, 900])
+        main_layout.addWidget(self.splitter)
 
-    def change_language(self):
-        new_lang = self.lang_combo.currentData()
-        if new_lang:
-            self.current_lang = new_lang
-            self.settings.setValue("language", new_lang)
-            self.apply_translations()
-            self.load_directory(self.current_path)
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
 
-    def apply_translations(self):
-        self.setWindowTitle(self.t("title"))
-        if self.root_frame:
-            self.root_label.setText(self.t("root_warn"))
-            self.btn_dismiss_root.setText(self.t("dismiss"))
-        self.btn_home.setText(self.t("home"))
-        self.btn_refresh.setText(self.t("refresh"))
-        self.table.setHorizontalHeaderLabels([
-            self.t("col_name"),
-            self.t("col_size"),
-            self.t("col_type"),
-            self.t("col_date")
-        ])
+        self.history_back = []
+        self.history_forward = []
 
-    def format_size(self, size_bytes):
-        if size_bytes < 1024:
-            return f"{size_bytes} B"
-        elif size_bytes < 1024 * 1024:
-            return f"{size_bytes / 1024:.1f} KB"
-        elif size_bytes < 1024 * 1024 * 1024:
-            return f"{size_bytes / (1024 * 1024):.1f} MB"
+        self.setup_shortcuts()
+        self.update_sidebar()
+        self.change_language("English (US)")
+
+    def setup_shortcuts(self):
+        QShortcut(QKeySequence("Ctrl+H"), self).activated.connect(self.toggle_hidden)
+        QShortcut(QKeySequence("F5"), self).activated.connect(self.populate_list)
+        QShortcut(QKeySequence("Ctrl+R"), self).activated.connect(self.populate_list)
+        QShortcut(QKeySequence("Alt+Up"), self).activated.connect(self.go_up)
+        QShortcut(QKeySequence("Delete"), self).activated.connect(self.delete_selected)
+        QShortcut(QKeySequence("F2"), self).activated.connect(self.rename_selected)
+        QShortcut(QKeySequence("Ctrl+C"), self).activated.connect(self.copy_selected)
+        QShortcut(QKeySequence("Ctrl+X"), self).activated.connect(self.cut_selected)
+        QShortcut(QKeySequence("Ctrl+V"), self).activated.connect(self.paste_items)
+        QShortcut(QKeySequence("Ctrl+F"), self).activated.connect(self.search_input.setFocus)
+
+    def toggle_hidden(self):
+        self.show_hidden = not self.show_hidden
+        self.populate_list()
+
+    def go_up(self):
+        parent_dir = os.path.dirname(self.current_path)
+        if parent_dir != self.current_path:
+            self.navigate(parent_dir)
+
+    def change_language(self, lang):
+        self.current_language = lang
+        t = TRANSLATIONS[lang]
+        self.btn_home.setText(t["home"])
+        self.btn_refresh.setText(t["refresh"])
+        self.search_input.setPlaceholderText(t["search_placeholder"])
+        self.table.setHorizontalHeaderLabels([t["name"], t["size"], t["type"], t["date_modified"]])
+        self.update_sidebar()
+        self.populate_list()
+
+    def update_sidebar(self):
+        self.sidebar.clear()
+        t = TRANSLATIONS[self.current_language]
+        places = [
+            (t["home"], os.path.expanduser("~")),
+            (t["documents"], os.path.expanduser("~/Documents")),
+            (t["downloads"], os.path.expanduser("~/Downloads")),
+            (t["pictures"], os.path.expanduser("~/Pictures")),
+            (t["music"], os.path.expanduser("~/Music")),
+            (t["videos"], os.path.expanduser("~/Videos")),
+            (t["root"], "/"),
+        ]
+        for name, path in places:
+            if os.path.exists(path) or path == "/":
+                item = QListWidgetItem(name)
+                item.setData(Qt.ItemDataRole.UserRole, path)
+                self.sidebar.addItem(item)
+
+    def sidebar_nav(self, item):
+        path = item.data(Qt.ItemDataRole.UserRole)
+        self.navigate(path)
+
+    def navigate(self, path):
+        if os.path.isdir(path):
+            if self.current_path:
+                self.history_back.append(self.current_path)
+                self.btn_back.setEnabled(True)
+            self.history_forward.clear()
+            self.btn_forward.setEnabled(False)
+            self.current_path = path
+            self.path_input.setText(path)
+            self.search_input.clear()
+            self.populate_list()
+
+    def navigate_from_input(self):
+        path = self.path_input.text()
+        if os.path.exists(path) and os.path.isdir(path):
+            self.navigate(path)
         else:
-            return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+            self.path_input.setText(self.current_path)
 
-    def load_directory(self, path):
-        if not os.path.isdir(path):
-            return
-        self.current_path = os.path.abspath(path)
-        self.path_input.setText(self.current_path)
+    def go_back(self):
+        if self.history_back:
+            self.history_forward.append(self.current_path)
+            self.btn_forward.setEnabled(True)
+            self.current_path = self.history_back.pop()
+            if not self.history_back:
+                self.btn_back.setEnabled(False)
+            self.path_input.setText(self.current_path)
+            self.search_input.clear()
+            self.populate_list()
+
+    def go_forward(self):
+        if self.history_forward:
+            self.history_back.append(self.current_path)
+            self.btn_back.setEnabled(True)
+            self.current_path = self.history_forward.pop()
+            if not self.history_forward:
+                self.btn_forward.setEnabled(False)
+            self.path_input.setText(self.current_path)
+            self.search_input.clear()
+            self.populate_list()
+
+    def go_home(self):
+        self.navigate(os.path.expanduser("~"))
+
+    def format_size(self, size):
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} PB"
+
+    def populate_list(self):
         self.table.setRowCount(0)
         try:
-            entries = os.scandir(self.current_path)
+            items = os.listdir(self.current_path)
         except PermissionError:
-            QMessageBox.critical(self, "Error", f"Permission denied:\n{self.current_path}")
             return
-        dirs, files = [], []
-        for entry in entries:
+
+        directories = []
+        files = []
+        t = TRANSLATIONS[self.current_language]
+
+        for item in items:
+            if not self.show_hidden and item.startswith('.'):
+                continue
+            full_path = os.path.join(self.current_path, item)
             try:
-                stat = entry.stat(follow_symlinks=False)
-                info = (entry.name, entry.is_dir(follow_symlinks=False), stat.st_size, stat.st_mtime)
-                if info[1]:
-                    dirs.append(info)
+                stat_info = os.stat(full_path)
+                mtime = datetime.fromtimestamp(stat_info.st_mtime).strftime('%Y-%m-%d %H:%M')
+                if stat.S_ISDIR(stat_info.st_mode):
+                    directories.append((item, "", t["folder"], mtime, full_path))
                 else:
-                    files.append(info)
+                    size = self.format_size(stat_info.st_size)
+                    files.append((item, size, t["file"], mtime, full_path))
             except Exception:
                 continue
-        dirs.sort(key=lambda x: x[0].lower())
+
+        directories.sort(key=lambda x: x[0].lower())
         files.sort(key=lambda x: x[0].lower())
-        all_items = dirs + files
+        all_items = directories + files
+
         self.table.setRowCount(len(all_items))
-        for row, (name, is_dir, size, mtime) in enumerate(all_items):
-            item_name = QTableWidgetItem(name)
-            item_name.setIcon(self.icon_folder if is_dir else self.icon_file)
-            item_name.setData(Qt.ItemDataRole.UserRole, os.path.join(self.current_path, name))
-            item_name.setData(Qt.ItemDataRole.UserRole + 1, is_dir)
-            size_str = "" if is_dir else self.format_size(size)
-            item_size = QTableWidgetItem(size_str)
-            item_size.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            type_str = self.t("type_folder") if is_dir else self.t("type_file")
-            item_type = QTableWidgetItem(type_str)
-            date_str = time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime))
-            item_date = QTableWidgetItem(date_str)
-            self.table.setItem(row, 0, item_name)
-            self.table.setItem(row, 1, item_size)
-            self.table.setItem(row, 2, item_type)
-            self.table.setItem(row, 3, item_date)
+        for row, data in enumerate(all_items):
+            for col, text in enumerate(data[:4]):
+                widget_item = QTableWidgetItem(text)
+                widget_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                if col == 0 and data[2] == t["folder"]:
+                    widget_item.setForeground(QColor("#89b4fa"))
+                self.table.setItem(row, col, widget_item)
+            self.table.item(row, 0).setData(Qt.ItemDataRole.UserRole, data[4])
+        self.update_status_bar()
 
-    def go_to(self, path, track_history=True):
-        if not os.path.exists(path):
-            return
-        if track_history:
-            if self.history_index < len(self.history) - 1:
-                self.history = self.history[:self.history_index + 1]
-            self.history.append(path)
-            self.history_index = len(self.history) - 1
-        self.load_directory(path)
+    def filter_items(self, query):
+        query = query.lower()
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if query in item.text().lower():
+                self.table.setRowHidden(row, False)
+            else:
+                self.table.setRowHidden(row, True)
 
-    def nav_back(self):
-        if self.history_index > 0:
-            self.history_index -= 1
-            self.go_to(self.history[self.history_index], track_history=False)
-
-    def nav_forward(self):
-        if self.history_index < len(self.history) - 1:
-            self.history_index += 1
-            self.go_to(self.history[self.history_index], track_history=False)
-
-    def nav_home(self):
-        self.go_to(os.path.expanduser("~"))
-
-    def nav_refresh(self):
-        self.load_directory(self.current_path)
-
-    def navigate_to_path(self):
-        target = self.path_input.text()
-        if os.path.isdir(target):
-            self.go_to(target)
-
-    def on_row_double_clicked(self, row, col):
+    def on_item_double_clicked(self, row, column):
         item = self.table.item(row, 0)
-        if not item:
-            return
-        path = item.data(Qt.ItemDataRole.UserRole)
-        is_dir = item.data(Qt.ItemDataRole.UserRole + 1)
-        if is_dir:
-            self.go_to(path)
+        full_path = item.data(Qt.ItemDataRole.UserRole)
+        if os.path.isdir(full_path):
+            self.navigate(full_path)
         else:
-            self.open_file_autonomously(path)
-
-    def open_file_autonomously(self, path):
-        try:
-            if shutil.which("xdg-open"):
-                subprocess.Popen(["xdg-open", path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-                return
-            for opener in ["gio", "mimeo", "handlr"]:
-                if shutil.which(opener):
-                    subprocess.Popen([opener, "open", path], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-                    return
-            QMessageBox.warning(self, "Aetheris", f"No default opener found for:\n{path}")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to open file: {e}")
+            if sys.platform.startswith('linux'):
+                subprocess.Popen(['xdg-open', full_path])
 
     def open_context_menu(self, position):
-        item = self.table.itemAt(position)
-        if not item:
-            return
-        row = item.row()
-        target_item = self.table.item(row, 0)
-        path = target_item.data(Qt.ItemDataRole.UserRole)
-        menu = QMenu(self)
-        act_open = QAction(self.t("open"), self)
-        act_open.triggered.connect(lambda: self.on_row_double_clicked(row, 0))
-        menu.addAction(act_open)
-        act_delete = QAction(self.t("delete"), self)
-        act_delete.triggered.connect(lambda: self.delete_item(path))
-        menu.addAction(act_delete)
+        menu = QMenu()
+        t = TRANSLATIONS[self.current_language]
+
+        action_terminal = QAction(t["open_terminal"], self)
+        action_terminal.triggered.connect(self.open_terminal)
+        menu.addAction(action_terminal)
+        menu.addSeparator()
+
+        selected_items = self.table.selectedItems()
+        if not selected_items:
+            action_new_folder = QAction(t["new_folder"], self)
+            action_new_folder.triggered.connect(self.create_folder)
+            menu.addAction(action_new_folder)
+            
+            if self.clipboard_paths:
+                action_paste = QAction(t["paste"], self)
+                action_paste.triggered.connect(self.paste_items)
+                menu.addAction(action_paste)
+        else:
+            action_copy = QAction(t["copy"], self)
+            action_copy.triggered.connect(self.copy_selected)
+            action_cut = QAction(t["cut"], self)
+            action_cut.triggered.connect(self.cut_selected)
+            action_rename = QAction(t["rename"], self)
+            action_rename.triggered.connect(self.rename_selected)
+            action_delete = QAction(t["delete"], self)
+            action_delete.triggered.connect(self.delete_selected)
+            
+            menu.addAction(action_copy)
+            menu.addAction(action_cut)
+            menu.addAction(action_rename)
+            menu.addAction(action_delete)
+
         menu.exec(self.table.viewport().mapToGlobal(position))
 
-    def delete_item(self, path):
-        reply = QMessageBox.question(
-            self,
-            self.t("delete"),
-            f"{self.t('confirm_del')}\n{path}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        if reply == QMessageBox.StandardButton.Yes:
+    def get_selected_paths(self):
+        paths = []
+        for item in self.table.selectedItems():
+            if item.column() == 0:
+                paths.append(item.data(Qt.ItemDataRole.UserRole))
+        return paths
+
+    def open_terminal(self):
+        try:
+            subprocess.Popen(['konsole', '--workdir', self.current_path])
+        except Exception:
+            try:
+                subprocess.Popen(['xterm', '-e', f'cd {self.current_path} && bash'])
+            except Exception:
+                pass
+
+    def create_folder(self):
+        t = TRANSLATIONS[self.current_language]
+        text, ok = QInputDialog.getText(self, t["new_folder"], t["enter_name"])
+        if ok and text:
+            os.makedirs(os.path.join(self.current_path, text), exist_ok=True)
+            self.populate_list()
+
+    def copy_selected(self):
+        self.clipboard_paths = self.get_selected_paths()
+        self.clipboard_action = "copy"
+
+    def cut_selected(self):
+        self.clipboard_paths = self.get_selected_paths()
+        self.clipboard_action = "cut"
+
+    def paste_items(self):
+        if not self.clipboard_paths: return
+        for path in self.clipboard_paths:
+            target = os.path.join(self.current_path, os.path.basename(path))
+            try:
+                if self.clipboard_action == "copy":
+                    if os.path.isdir(path):
+                        shutil.copytree(path, target)
+                    else:
+                        shutil.copy2(path, target)
+                elif self.clipboard_action == "cut":
+                    shutil.move(path, target)
+            except Exception:
+                pass
+        if self.clipboard_action == "cut":
+            self.clipboard_paths = []
+            self.clipboard_action = None
+        self.populate_list()
+
+    def rename_selected(self):
+        paths = self.get_selected_paths()
+        if not paths: return
+        target = paths[0]
+        t = TRANSLATIONS[self.current_language]
+        text, ok = QInputDialog.getText(self, t["rename"], t["enter_name"], text=os.path.basename(target))
+        if ok and text:
+            os.rename(target, os.path.join(self.current_path, text))
+            self.populate_list()
+
+    def delete_selected(self):
+        paths = self.get_selected_paths()
+        for path in paths:
             try:
                 if os.path.isdir(path):
                     shutil.rmtree(path)
                 else:
                     os.remove(path)
-                self.nav_refresh()
-            except Exception as e:
-                QMessageBox.critical(self, "Error", str(e))
+            except Exception:
+                pass
+        self.populate_list()
+
+    def update_status_bar(self):
+        t = TRANSLATIONS[self.current_language]
+        total = self.table.rowCount()
+        selected = len(self.get_selected_paths())
+        try:
+            usage = shutil.disk_usage(self.current_path)
+            free = self.format_size(usage.free)
+        except Exception:
+            free = "N/A"
+        msg = f"{total} {t['items']} | {selected} {t['selected']} | {t['free_space']}: {free}"
+        self.status_bar.showMessage(msg)
