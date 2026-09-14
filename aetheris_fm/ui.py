@@ -32,6 +32,12 @@ class MainWindow(QMainWindow):
         self.clipboard_action = None
         self.init_ui()
 
+    def get_theme_icon(self, icon_name, fallback_standard):
+        icon = QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            return self.style().standardIcon(fallback_standard)
+        return icon
+
     def init_ui(self):
         self.setWindowTitle("Aetheris File Manager by Miguel")
         self.resize(1150, 750)
@@ -41,6 +47,8 @@ class MainWindow(QMainWindow):
             icon_path = "/usr/share/pixmaps/aetheris-file-manager-by-miguel.png"
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
+        else:
+            self.setWindowIcon(self.get_theme_icon("system-file-manager", QStyle.StandardPixmap.SP_DirIcon))
 
         self.setup_menu_bar()
 
@@ -53,23 +61,25 @@ class MainWindow(QMainWindow):
         top_bar = QHBoxLayout()
         top_bar.setSpacing(10)
 
-        self.btn_back = QPushButton("◀")
+        self.btn_back = QPushButton()
+        self.btn_back.setIcon(self.get_theme_icon("go-previous", QStyle.StandardPixmap.SP_ArrowLeft))
         self.btn_back.setFixedSize(40, 35)
         self.btn_back.clicked.connect(self.go_back)
 
-        self.btn_forward = QPushButton("▶")
+        self.btn_forward = QPushButton()
+        self.btn_forward.setIcon(self.get_theme_icon("go-next", QStyle.StandardPixmap.SP_ArrowRight))
         self.btn_forward.setFixedSize(40, 35)
         self.btn_forward.clicked.connect(self.go_forward)
         self.btn_forward.setEnabled(False)
 
         self.btn_home = QPushButton()
         self.btn_home.setFixedHeight(35)
-        self.btn_home.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirHomeIcon))
+        self.btn_home.setIcon(self.get_theme_icon("go-home", QStyle.StandardPixmap.SP_DirHomeIcon))
         self.btn_home.clicked.connect(self.go_home)
 
         self.btn_refresh = QPushButton()
         self.btn_refresh.setFixedHeight(35)
-        self.btn_refresh.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.btn_refresh.setIcon(self.get_theme_icon("view-refresh", QStyle.StandardPixmap.SP_BrowserReload))
         self.btn_refresh.clicked.connect(self.populate_list)
 
         self.path_input = QLineEdit()
@@ -241,22 +251,19 @@ class MainWindow(QMainWindow):
         self.sidebar.clear()
         t = TRANSLATIONS[self.current_language]
         
-        icon_home = self.style().standardIcon(QStyle.StandardPixmap.SP_DirHomeIcon)
-        icon_dir = self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon)
-        icon_drive = self.style().standardIcon(QStyle.StandardPixmap.SP_DriveHDIcon)
-        icon_trash = self.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon)
-
         places = [
-            (t["home"], os.path.expanduser("~"), icon_home),
-            (t["documents"], os.path.expanduser("~/Documents"), icon_dir),
-            (t["downloads"], os.path.expanduser("~/Downloads"), icon_dir),
-            (t["pictures"], os.path.expanduser("~/Pictures"), icon_dir),
-            (t["music"], os.path.expanduser("~/Music"), icon_dir),
-            (t["videos"], os.path.expanduser("~/Videos"), icon_dir),
-            (t["root"], "/", icon_drive),
+            (t["home"], os.path.expanduser("~"), "user-home"),
+            (t["documents"], os.path.expanduser("~/Documents"), "folder-documents"),
+            (t["downloads"], os.path.expanduser("~/Downloads"), "folder-download"),
+            (t["pictures"], os.path.expanduser("~/Pictures"), "folder-pictures"),
+            (t["music"], os.path.expanduser("~/Music"), "folder-music"),
+            (t["videos"], os.path.expanduser("~/Videos"), "folder-videos"),
+            (t["root"], "/", "drive-harddisk"),
         ]
-        for name, path, icon in places:
+        
+        for name, path, icon_name in places:
             if os.path.exists(path) or path == "/":
+                icon = self.get_theme_icon(icon_name, QStyle.StandardPixmap.SP_DirIcon)
                 item = QListWidgetItem(icon, name)
                 item.setData(Qt.ItemDataRole.UserRole, path)
                 self.sidebar.addItem(item)
@@ -316,6 +323,46 @@ class MainWindow(QMainWindow):
             size /= 1024.0
         return f"{size:.1f} PB"
 
+    def get_icon_for_file(self, filename):
+        ext = filename.lower().split('.')[-1] if '.' in filename else ""
+        if ext in ['png', 'jpg', 'jpeg', 'svg', 'gif', 'bmp']:
+            return self.get_theme_icon("image-x-generic", QStyle.StandardPixmap.SP_FileIcon)
+        elif ext in ['mp4', 'mkv', 'avi', 'webm', 'mov']:
+            return self.get_theme_icon("video-x-generic", QStyle.StandardPixmap.SP_FileIcon)
+        elif ext in ['mp3', 'wav', 'flac', 'ogg']:
+            return self.get_theme_icon("audio-x-generic", QStyle.StandardPixmap.SP_FileIcon)
+        elif ext in ['zip', 'tar', 'gz', 'rar', '7z', 'xz']:
+            return self.get_theme_icon("package-x-generic", QStyle.StandardPixmap.SP_FileIcon)
+        elif ext in ['txt', 'md', 'csv', 'json']:
+            return self.get_theme_icon("text-x-generic", QStyle.StandardPixmap.SP_FileIcon)
+        elif ext in ['py', 'sh', 'cpp', 'c', 'js', 'html', 'css']:
+            return self.get_theme_icon("text-x-script", QStyle.StandardPixmap.SP_FileIcon)
+        elif ext in ['pdf']:
+            return self.get_theme_icon("application-pdf", QStyle.StandardPixmap.SP_FileIcon)
+        else:
+            return self.get_theme_icon("application-x-generic", QStyle.StandardPixmap.SP_FileIcon)
+
+    def get_icon_for_directory(self, dirname):
+        name = dirname.lower()
+        if name in ['downloads', 'transferências', 'descargas']:
+            return self.get_theme_icon("folder-download", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['documents', 'documentos', 'dokumente']:
+            return self.get_theme_icon("folder-documents", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['pictures', 'imagens', 'imágenes', 'bilder']:
+            return self.get_theme_icon("folder-pictures", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['music', 'músicas', 'música', 'musik']:
+            return self.get_theme_icon("folder-music", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['videos', 'vídeos']:
+            return self.get_theme_icon("folder-videos", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['desktop', 'área de trabalho', 'escritorio']:
+            return self.get_theme_icon("user-desktop", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['public', 'público']:
+            return self.get_theme_icon("folder-public", QStyle.StandardPixmap.SP_DirIcon)
+        elif name in ['templates', 'modelos']:
+            return self.get_theme_icon("folder-templates", QStyle.StandardPixmap.SP_DirIcon)
+        else:
+            return self.get_theme_icon("folder", QStyle.StandardPixmap.SP_DirIcon)
+
     def populate_list(self):
         self.table.setSortingEnabled(False)
         self.table.setRowCount(0)
@@ -329,9 +376,6 @@ class MainWindow(QMainWindow):
         files = []
         t = TRANSLATIONS[self.current_language]
 
-        icon_dir = self.style().standardIcon(QStyle.StandardPixmap.SP_DirIcon)
-        icon_file = self.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon)
-
         for item in items:
             if not self.show_hidden and item.startswith('.'):
                 continue
@@ -341,11 +385,13 @@ class MainWindow(QMainWindow):
                 mtime = datetime.fromtimestamp(stat_info.st_mtime).strftime('%Y-%m-%d %H:%M')
                 
                 if stat.S_ISDIR(stat_info.st_mode):
-                    directories.append((item, 0, "", t["folder"], mtime, full_path, icon_dir))
+                    icon = self.get_icon_for_directory(item)
+                    directories.append((item, 0, "", t["folder"], mtime, full_path, icon))
                 else:
                     raw_size = stat_info.st_size
                     fmt_size = self.format_size(raw_size)
-                    files.append((item, raw_size, fmt_size, t["file"], mtime, full_path, icon_file))
+                    icon = self.get_icon_for_file(item)
+                    files.append((item, raw_size, fmt_size, t["file"], mtime, full_path, icon))
             except Exception:
                 continue
 
@@ -394,16 +440,16 @@ class MainWindow(QMainWindow):
         menu = QMenu()
         t = TRANSLATIONS[self.current_language]
 
-        action_terminal = QAction(t["open_terminal"], self)
+        action_terminal = QAction(self.get_theme_icon("utilities-terminal", QStyle.StandardPixmap.SP_ComputerIcon), t["open_terminal"], self)
         action_terminal.triggered.connect(self.open_terminal)
         menu.addAction(action_terminal)
         menu.addSeparator()
 
         selected_items = self.table.selectedItems()
         if not selected_items:
-            action_new_folder = QAction(t["new_folder"], self)
+            action_new_folder = QAction(self.get_theme_icon("folder-new", QStyle.StandardPixmap.SP_DirIcon), t["new_folder"], self)
             action_new_folder.triggered.connect(self.create_folder)
-            action_new_file = QAction(t["new_file"], self)
+            action_new_file = QAction(self.get_theme_icon("document-new", QStyle.StandardPixmap.SP_FileIcon), t["new_file"], self)
             action_new_file.triggered.connect(self.create_file)
             
             menu.addAction(action_new_folder)
@@ -411,17 +457,17 @@ class MainWindow(QMainWindow):
             
             if self.clipboard_paths:
                 menu.addSeparator()
-                action_paste = QAction(t["paste"], self)
+                action_paste = QAction(self.get_theme_icon("edit-paste", QStyle.StandardPixmap.SP_FileIcon), t["paste"], self)
                 action_paste.triggered.connect(self.paste_items)
                 menu.addAction(action_paste)
         else:
-            action_copy = QAction(t["copy"], self)
+            action_copy = QAction(self.get_theme_icon("edit-copy", QStyle.StandardPixmap.SP_FileIcon), t["copy"], self)
             action_copy.triggered.connect(self.copy_selected)
-            action_cut = QAction(t["cut"], self)
+            action_cut = QAction(self.get_theme_icon("edit-cut", QStyle.StandardPixmap.SP_FileIcon), t["cut"], self)
             action_cut.triggered.connect(self.cut_selected)
             action_rename = QAction(t["rename"], self)
             action_rename.triggered.connect(self.rename_selected)
-            action_delete = QAction(t["delete"], self)
+            action_delete = QAction(self.get_theme_icon("edit-delete", QStyle.StandardPixmap.SP_TrashIcon), t["delete"], self)
             action_delete.triggered.connect(self.delete_selected)
             
             menu.addAction(action_copy)
