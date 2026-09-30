@@ -6,4 +6,4 @@ This is my first project.
 
 ## License
 
-This project is dedicated to the public domain under [The Unlicense](LICENSE).
+This project is dedicated to the public domain under [GPL.3.0](LICENSE).
